@@ -289,8 +289,13 @@ class PictSectionOpenSeaDragon extends libPictViewClass
 			this.viewer.destroy();
 		}
 
+		// Annotorious (and its plugin globals: Annotorious, SelectorPack, BetterPolygon, ...) is required by
+		// default. Pass { Annotorious: false } in the view options to run as a plain OpenSeaDragon deep-zoom
+		// viewer with no annotation layer, so a host need not load the Annotorious globals at all. Existing
+		// consumers that do not set the flag are unaffected.
+		this.annotoriousEnabled = (this.options.Annotorious !== false);
 		// We only need to instantiate Annotorious if a set of annotations were passed in, or annotation editing is enabled.
-		this.editingEnabled = this.options.EnableAnnotation && this.toolbarElement;
+		this.editingEnabled = this.annotoriousEnabled && this.options.EnableAnnotation && this.toolbarElement;
 
 		this.viewer = OpenSeadragon(this.osdSettings);
 		this.viewer.addHandler('open', () => {
@@ -351,7 +356,7 @@ class PictSectionOpenSeaDragon extends libPictViewClass
 			}
 		});
 
-		if (this.editingEnabled || this.options.Annotations?.length)
+		if (this.annotoriousEnabled && (this.editingEnabled || this.options.Annotations?.length))
 		{
 			this.AnnotationsPanel = this.pict.views?.[this.options.OSDASViewAddress];
 			if (!this.AnnotationsPanel)
@@ -449,7 +454,7 @@ class PictSectionOpenSeaDragon extends libPictViewClass
 				this.annotator.disableEditor = false;
 			}
 		}
-		else 
+		else if (this.annotoriousEnabled)
 		{
 			// Instantiate Annotorious then destroy it in case there's any left over state that needs to be cleared.
 			this.annotator = OpenSeadragon.Annotorious(this.viewer, {
@@ -473,7 +478,7 @@ class PictSectionOpenSeaDragon extends libPictViewClass
 	// Set an Annotation set. Can optionally rerender component as well.
 	setAnnotations(annotations, reRender)
 	{
-		this.annotator.clearAnnotations();
+		if (this.annotator) { this.annotator.clearAnnotations(); }
 		this.options.Annotations = annotations;
 		if (reRender)
 		{
